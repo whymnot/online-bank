@@ -1,75 +1,51 @@
-# React + TypeScript + Vite
+# Лазурит: интернет-банк (демо)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Фронтенд личного кабинета банка: вход, счета и карты, история операций с поиском, фильтрами и пагинацией.
 
-Currently, two official plugins are available:
+**Демо:** https://online-bank-gamma.vercel.app/login
+**Вход:** логин `demo`, пароль `demo123`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+> Бэкенда нет: сервер имитирует [MSW](https://mswjs.io) прямо в браузере, а данные операций генерируются. Это учебный проект, настоящих данных в нём нет.
 
-## React Compiler
+![Экран входа](docs/login.png)
+![Главная](docs/dashboard.png)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Что умеет
 
-## Expanding the ESLint configuration
+- Вход по логину и паролю, защищённые страницы, выход
+- Автовыход по бездействию: через 5 минут, за 30 секунд до этого предупреждение с кнопкой «Остаться»
+- Выход при ответе сервера 401, на экране входа объяснение, почему так вышло
+- Счета и карты, общий баланс, кнопка «Скрыть суммы»
+- История операций: поиск (с задержкой 300 мс), фильтр по категории, пагинация
+- Поиск, категория и страница хранятся в адресе: после обновления страницы фильтры остаются, ссылкой можно поделиться
+- Состояния загрузки (скелетоны), ошибок и пустого результата
+- Адаптив: боковое меню на компьютере, верхняя и нижняя панели на телефоне
+- Клавиатурная навигация и видимый фокус, `prefers-reduced-motion` уважается
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Стек
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+React, TypeScript, Vite, React Router, TanStack Query, MSW, Vitest
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Запуск
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev
+npm test
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Как устроено
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `src/lib/api.ts`: общий клиент запросов; любой 401 с токеном вызывает выход из системы в одном месте
+- `src/auth/AuthContext.tsx`: сессия в `sessionStorage` (живёт, пока открыта вкладка); при выходе очищается кэш запросов, чтобы данные не достались следующему пользователю
+- `src/hooks/useIdleTimeout.ts`: отсчёт бездействия по `Date.now()`, поэтому выход срабатывает вовремя, даже если вкладка была в фоне
+- `src/pages/OperationsPage.tsx`: состояние фильтров живёт в URL (`useSearchParams`), значения из адреса проверяются перед использованием
+- `src/mocks/handlers.ts`: фейковое API с проверкой токена, поиском, фильтром и пагинацией
+- `src/lib/format.ts`: форматирование денег, дат и приветствия (покрыто тестами)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Что бы я улучшил
 
-```
+- Хранить токен в httpOnly-cookie, а не в `sessionStorage` (на фронтенде без настоящего бэкенда это невозможно)
+- Добавить страницу переводов с обновлением баланса после операции
+- Тесты на компоненты (React Testing Library) и сквозные тесты (Playwright)
+- Виртуализация списка при тысячах операций
